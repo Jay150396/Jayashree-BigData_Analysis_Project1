@@ -32,85 +32,52 @@ SELECT * FROM total_en_pageviews WHERE total_views > 10000 ORDER BY total_views 
 -- 2. What English wikipedia article has the largest fraction of its readers follow an internal link to another wikipedia article?
 -- ANS:  HIGHEST FRACTION OF INTERNAL LINKS
 
-CREATE TABLE IF NOT EXISTS a_en_pageviews (page STRING,views INT) PARTITIONED BY (lang STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+create database march_data; 
 
-INSERT INTO TABLE a_en_pageviews PARTITION (lang = 'en') SELECT page, views FROM march_pageviews WHERE (lang = 'en');
+-- Switch To DataBase.
+use march_data;
 
-INSERT INTO TABLE a_en_pageviews PARTITION (lang = 'en.m') SELECT page, views FROM march_pageviews WHERE (lang = 'en.m');
+-- Create External Table And Give Path To The Database.
+create external table march_clickstream (prev string, curr string, types string, pair int) row format delimited fields terminated by '\t' stored as textfile location "/user/raj_ops/march_clickstream";
 
-CREATE TABLE IF NOT EXISTS total_a_pageviews AS SELECT DISTINCT(page), SUM(views) OVER (PARTITION BY page ORDER BY page) AS total_views FROM a_en_pageviews WHERE page != 'Main_Page' AND page != 'Special:Search' AND page != '-';
+-- QUESTION 02
+select prev, sum(pair) as visits from march_clickstream where types = "link" group by prev order by visits desc limit 20;
 
-CREATE TABLE IF NOT EXISTS internal_links (prev STRING,curr STRING,occ INT) PARTITIONED BY (type STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
-
-INSERT INTO TABLE internal_links PARTITION (type = 'link') SELECT prev, curr, occ FROM march_clickstream WHERE type = 'link';
-
-CREATE TABLE IF NOT EXISTS total_internal AS SELECT DISTINCT(prev), SUM(occ) OVER (PARTITION BY prev ORDER BY prev) AS total_links FROM internal_links WHERE prev != 'Main_Page';
-
-CREATE TABLE IF NOT EXISTS clickstream_final AS SELECT prev, total_links FROM total_internal ORDER BY total_links DESC;
-
-CREATE TABLE IF NOT EXISTS final_clickstream AS SELECT prev, ROUND((total_links / 30), 0) AS daily_clickstream FROM clickstream_final;
-
-CREATE TABLE IF NOT EXISTS join_clickstream AS SELECT * FROM final_clickstream WHERE daily_clickstream > 199 ORDER BY daily_clickstream DESC;
 
 SELECT c.prev, c.daily_clickstream, v.total_views, ROUND((c.daily_clickstream / v.total_views), 4) AS fraction FROM join_clickstream c INNER JOIN q2_views v ON (c.prev = v.page) LIMIT 10;
 
 -- 3. What series of wikipedia articles, starting with [Hotel California](https://en.wikipedia.org/wiki/Hotel_California), keeps the largest fraction of its readers clicking on internal links?  This is similar to (2), but you should continue the analysis past the first article.  There are multiple ways you can count this fraction, be careful to be clear about the method you find most appropriate.
 -- ANS: Largest fraction of readers from Hotel California
 
-CREATE TABLE IF NOT EXISTS hc_clickstream
-AS SELECT prev, ROUND((occ / 30), 4) 
-AS daily_cickstream FROM internal_links 
-WHERE prev = 'Hotel_California';
+create database march_data; 
 
-SELECT v.page, c.curr, c.occ, v.total_views, ROUND((c.occ / v.total_views), 4)
-AS fraction FROM total_a_pageviews v INNER JOIN internal_links c
-ON (v.page = c.prev) WHERE c.prev = 'Hotel_California'
-AND c.curr != 'Hotel_California_(Eagles_album)' AND c.curr != 'Eagles_(band)' LIMIT 10;
+-- Switch To DataBase.
+use march_data;
 
-SELECT v.page, c.curr, c.occ, v.total_views, ROUND((c.occ / v.total_views), 4)
-AS fraction FROM total_a_pageviews v INNER JOIN internal_links c 
-ON (v.page = c.prev) WHERE c.prev = 'Don_Felder' LIMIT 10;
+-- Create External Table And Give Path To The Database.
+create external table march_clickstream(prev string, curr string, types string, pair int) row format delimited fields terminated by '\t' stored as textfile location "/user/raj_ops/data_02";
 
-SELECT v.page, c.curr, c.occ, v.total_views, ROUND((c.occ / v.total_views), 4)
-AS fraction FROM total_a_pageviews v INNER JOIN internal_links c 
-ON (v.page = c.prev) WHERE c.prev = 'On_the_Border'
-AND curr != 'One_of_These_Nights' AND curr != 'Desperado_(Eagles_album)' LIMIT 10;
+-- QUESTION 03
+select prev, sum(pair) as visit from data_02 where prev regexp "Hotel_California" and types = "link" group by prev order by visit desc limit 10;
+
 
 -- 4. Find an example of an English wikipedia article that is relatively more popular in the Americas than elsewhere.
 -- ANS: RELATIVELY MORE POPULAR PAGE IN AMERICA THAN GERMANY
 
-CREATE TABLE IF NOT EXISTS en_am_views (
-	page STRING,
-	views INT)
-	PARTITIONED BY (lang STRING)
-	ROW FORMAT DELIMITED
-	FIELDS TERMINATED BY '\t';
+create database wiki; 
 
-INSERT INTO TABLE en_am_views PARTITION (lang = 'en')
-SELECT page, views FROM april_pageviews WHERE lang = 'en';
+-- Switch To DataBase.
+use wiki;
 
-CREATE TABLE IF NOT EXISTS total_am_views
-AS SELECT DISTINCT(page), SUM(views) OVER (PARTITION BY page ORDER BY page)
-AS total_views_am FROM en_am_views WHERE page != 'Main_Page' 
-AND page != 'Special:Search' AND page != '-';
+-- Create External Table And Give Path To The Database.
+create external table march_pageviews(domain_code string, page_title string, count_views int, total_response_size int) row format delimited fields terminated by ' ' stored as textfile location "/user/raj_ops/data_01";
 
-CREATE TABLE IF NOT EXISTS gm_de_views (
-	page STRING,
-	views INT)
-	PARTITIONED BY (lang STRING)
-	ROW FORMAT DELIMITED
-	FIELDS TERMINATED BY '\t';
+-- Create Table For English
+create table en_data_03 as select * from data_03 where domain_code regexp "en";
 
-INSERT INTO TABLE gm_de_views PARTITION (lang = 'de')
-SELECT page, views FROM gm_views WHERE lang = 'de';
+-- Create Table For German
+create table de_data_03 as select * from data_03 where domain_code regexp "de";
 
-CREATE TABLE IF NOT EXISTS total_gm_views
-AS SELECT DISTINCT(page), SUM(views) OVER (PARTITION BY page ORDER BY page)
-AS total_views_gm FROM gm_de_views WHERE page != 'Main_Page'
-AND page != 'Special:Search' AND page != '-';
+-- QUESTION 04
+select en.page_title, sum(en.count_views) as us_visits, de.page_title ,sum(de.count_views) as ge_visits from en_data_03 en join de_data_03 de where en.page_title = de.page_title group by en.page_title, de.page_title having us_visits > ge_visits order by us_visits desc, ge_visits limit 20;
 
-SELECT a.page, a.total_views_am, g.total_views_gm FROM total_am_views a
-INNER JOIN total_gm_views g ON (a.page = g.page) LIMIT 10;
-
-SELECT a.page, a.total_views_am, g.total_views_gm FROM total_am_views a
-INNER JOIN total_gm_views g ON (a.page = g.page) ORDER BY a.total_views_am DESC LIMIT 10;
