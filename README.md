@@ -32,7 +32,7 @@ This analysis consists of using big data tools to answer questions about dataset
 # Data Taken from
 
 1. Pageviews March 1st data 
-https://wikitech.wikimedia.org/wiki/Analytics/Data_Lake/Traffic/Pageviews
+- https://wikitech.wikimedia.org/wiki/Analytics/Data_Lake/Traffic/Pageviews
 2. Monthly Clickstream 
-https://meta.wikimedia.org/wiki/Research:Wikipedia_clickstream
+- https://meta.wikimedia.org/wiki/Research:Wikipedia_clickstream
 
