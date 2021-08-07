@@ -40,7 +40,6 @@ use march_data;
 -- Create External Table And Give Path To The Database.
 create external table march_clickstream (prev string, curr string, types string, pair int) row format delimited fields terminated by '\t' stored as textfile location "/user/raj_ops/march_clickstream";
 
--- QUESTION 02
 select prev, sum(pair) as visits from march_clickstream where types = "link" group by prev order by visits desc limit 20;
 
 
@@ -57,17 +56,16 @@ use march_data;
 -- Create External Table And Give Path To The Database.
 create external table march_clickstream(prev string, curr string, types string, pair int) row format delimited fields terminated by '\t' stored as textfile location "/user/raj_ops/data_02";
 
--- QUESTION 03
 select prev, sum(pair) as visit from data_02 where prev regexp "Hotel_California" and types = "link" group by prev order by visit desc limit 10;
 
 
 -- 4. Find an example of an English wikipedia article that is relatively more popular in the Americas than elsewhere.
 -- ANS: RELATIVELY MORE POPULAR PAGE IN AMERICA THAN GERMANY
 
-create database wiki; 
+create database march_data; 
 
 -- Switch To DataBase.
-use wiki;
+use march_data;
 
 -- Create External Table And Give Path To The Database.
 create external table march_pageviews(domain_code string, page_title string, count_views int, total_response_size int) row format delimited fields terminated by ' ' stored as textfile location "/user/raj_ops/data_01";
