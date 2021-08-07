@@ -19,9 +19,13 @@ This analysis consists of using big data tools to answer questions about dataset
 
 # problem statement
 
-1. Which English wikipedia article got the most traffic on January 20, 2021?
+1. Which English wikipedia article got the most traffic on March 1st, 2021?
 2. What English wikipedia article has the largest fraction of its readers follow an internal link to another wikipedia article?
 3. What series of wikipedia articles, starting with Hotel California, keeps the largest fraction of its readers clicking on internal links.
+
+# Data Definition
+- For problem statement 1, I have dowloaded March 1st, 2021 Data.
+- For problem statement 2 and 3, I have dowloaded Jan 2021 month Dataset.
 
 # Data Taken from
 
